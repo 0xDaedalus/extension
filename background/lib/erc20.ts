@@ -5,6 +5,26 @@ import { getEthereumNetwork } from "./utils"
 import { AccountBalance } from "../accounts"
 import { SmartContractFungibleAsset } from "../assets"
 
+export const ERC20_ABI = [
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 value) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function totalSupply() view returns (uint256)",
+  "function transfer(address to, uint amount) returns (bool)",
+  "function transferFrom(address from. address to, uint amount) returns (bool)",
+  "event Transfer(address indexed from, address indexed to, uint amount)",
+  "event Approval(address indexed owner, address indexed spender, uint amount)",
+]
+
+export const ERC2612_ABI = ERC20_ABI.concat([
+  "permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s)",
+  "nonces(address owner) view returns (uint)",
+  "DOMAIN_SEPARATOR() view returns (bytes32)",
+])
+
 /*
  * Get an account's balance from an ERC20-compliant contract.
  */
