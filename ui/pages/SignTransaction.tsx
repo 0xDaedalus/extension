@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from "react"
+import React, { ReactElement, useEffect, useState } from "react"
 import { useHistory, useLocation } from "react-router-dom"
 import {
   selectIsTransactionLoaded,
@@ -17,11 +17,13 @@ import {
   useBackgroundSelector,
   useAreKeyringsUnlocked,
 } from "../hooks"
+import SignTransactionTransferBlock from "../components/SignTransaction/SignTransactionTransferBlock"
 
 enum SignType {
   Sign = "sign",
   SignSwap = "sign-swap",
   SignSpend = "sign-spend",
+  SignTransfer = "sign-transfer",
 }
 
 interface SignLocationState {
@@ -35,19 +37,33 @@ export default function SignTransaction(): ReactElement {
 
   const history = useHistory()
   const dispatch = useBackgroundDispatch()
-  const location = useLocation<SignLocationState>()
-  const { assetSymbol, amount, signType } = location.state
+  const location = useLocation<SignLocationState | undefined>()
+  const { assetSymbol, amount, signType } = location.state ?? {
+    signType: SignType.Sign,
+  }
   const isTransactionDataReady = useBackgroundSelector(
     selectIsTransactionLoaded
   )
 
-  // TODO the below should return a promise that resolves once tx is signed
   const isTransactionSigned = useBackgroundSelector(selectIsTransactionSigned)
-  const txDetails = useBackgroundSelector(selectTransactionData)
+  const transactionDetails = useBackgroundSelector(selectTransactionData)
 
   const [panelNumber, setPanelNumber] = useState(0)
+  const [isTransactionSigning, setIsTransactionSigning] = useState(false)
+
+  useEffect(() => {
+    if (isTransactionSigning && isTransactionSigned) {
+      history.push("/")
+    }
+  }, [history, isTransactionSigned, isTransactionSigning])
 
   if (!areKeyringsUnlocked) {
+    return <></>
+  }
+
+  if (typeof transactionDetails === "undefined") {
+    // TODO Some sort of unexpected state error if we end up here... Or do we
+    // go back in history? That won't work for dApp popovers though.
     return <></>
   }
 
@@ -68,20 +84,33 @@ export default function SignTransaction(): ReactElement {
       component: () => <SignTransactionApproveSpendAssetBlock />,
       confirmButtonText: "Approve",
     },
+    [SignType.SignTransfer]: {
+      title: "Sign Transfer",
+      component: () => (
+        <SignTransactionTransferBlock
+          token={assetSymbol ?? ""}
+          amount={amount ?? 0}
+        />
+      ),
+      confirmButtonText: "Sign",
+    },
     [SignType.Sign]: {
       title: "Sign Transaction",
       component: () => (
-        <SignTransactionSignBlock token={assetSymbol} amount={amount} />
+        <SignTransactionSignBlock transactionDetails={transactionDetails} />
       ),
       confirmButtonText: "Sign",
     },
   }
 
   const handleConfirm = async () => {
-    if (SignType.Sign === signType && isTransactionDataReady && txDetails) {
-      dispatch(signTransaction(txDetails))
-      await isTransactionSigned
-      history.push("/")
+    if (
+      SignType.Sign === signType &&
+      isTransactionDataReady &&
+      transactionDetails
+    ) {
+      dispatch(signTransaction(transactionDetails))
+      setIsTransactionSigning(true)
     }
   }
 
