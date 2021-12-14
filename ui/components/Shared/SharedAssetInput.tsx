@@ -30,9 +30,13 @@ function SelectTokenMenuContent(
       </div>
       <div className="divider" />
       <ul>
-        {assets.map((asset) => {
+        {assets.map((asset, i) => {
           return (
-            <SharedAssetItem asset={asset} onClick={setSelectedTokenAndClose} />
+            <SharedAssetItem
+              key={i}
+              asset={asset}
+              onClick={setSelectedTokenAndClose}
+            />
           )
         })}
       </ul>

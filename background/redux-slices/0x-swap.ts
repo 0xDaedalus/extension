@@ -16,6 +16,32 @@ export interface SwapState {
   sellAmount: string
   buyAmount: string
   tokens: Asset[]
+  limitTokens: Asset[]
+}
+
+interface RookToken {
+  address: string,
+  chainId: number,
+  name: string,
+  symbol: string,
+  decimals: number,
+  logoURI: string
+}
+
+interface RookTokenListResponse {
+  result: { 
+    name: string,
+    timestamp: string,
+    version: {
+      major: number,
+      minor: number,
+      patch: number
+    },
+    keywords: string[],
+    tokens: RookToken[],
+    logoURI: string
+  },
+  message: string
 }
 
 interface SwapToken {
@@ -40,10 +66,8 @@ interface ZrxPrice {
   price: string
 }
 
-export const fetchTokens = createBackgroundAsyncThunk(
-  "0x-swap/fetchTokens",
-  async (_, { getState }) => {
-    const state = getState() as { assets: AssetsState }
+const getValidAssets = async (getState: () => unknown) => {
+  const state = getState() as { assets: AssetsState }
     const assets = state.assets as Asset[]
     const apiData = await fetchJson(`https://api.0x.org/swap/v1/tokens`)
 
@@ -96,6 +120,24 @@ export const fetchTokens = createBackgroundAsyncThunk(
       })
 
     return filteredAssets
+}
+
+export const fetchTokens = createBackgroundAsyncThunk(
+  "0x-swap/fetchTokens",
+  async (_, { getState }) => {
+    logger.log('fetching tokens')
+    return getValidAssets(getState)
+  }
+)
+
+export const fetchLimitTokens = createBackgroundAsyncThunk(
+  "0x-swap/fetchLimitTokens",
+  async (_, { getState }) => {
+    const validAssets = await getValidAssets(getState)
+    const rookTokens = await fetchJson(`https://hidingbook.keeperdao.com/api/v1/tokenList`) as RookTokenListResponse
+    return validAssets.filter(asset => {
+      return rookTokens.result.tokens.find(rookToken => rookToken.address === asset.contractAddress && String(rookToken.chainId) === asset.homeNetwork.chainID)
+    })
   }
 )
 
@@ -116,6 +158,7 @@ export const initialState: SwapState = {
   sellAmount: "",
   buyAmount: "",
   tokens: [],
+  limitTokens: []
 }
 
 const swapSlice = createSlice({
@@ -162,6 +205,12 @@ const swapSlice = createSlice({
         fetchTokens.fulfilled,
         (immerState, { payload: tokens }: { payload: Asset[] }) => {
           return { ...immerState, tokens }
+        }
+      )
+      .addCase(
+        fetchLimitTokens.fulfilled,
+        (immerState, { payload: limitTokens }: { payload: Asset[] }) => {
+          return { ...immerState, limitTokens }
         }
       )
   },
