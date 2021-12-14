@@ -31,7 +31,7 @@ function SelectTokenMenuContent(
       </div>
       <div className="divider" />
       <ul>
-        {assets.map((asset) => {
+        {assets.map((asset, i) => {
           return (
             <SharedAssetItem
               key={asset.metadata?.coinGeckoID || asset.symbol}
