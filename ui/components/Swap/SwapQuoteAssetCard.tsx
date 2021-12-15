@@ -1,13 +1,35 @@
 import React, { ReactElement } from "react"
+import { useBackgroundSelector } from "../../hooks"
 import SharedAssetIcon from "../Shared/SharedAssetIcon"
 
-export default function SwapQuoteAssetCard(): ReactElement {
+interface SwapQuoteAssetCardProps {
+  type: "buy" | "sell"
+  test?: "enabled"
+}
+
+export default function SwapQuoteAssetCard(
+  props: SwapQuoteAssetCardProps
+): ReactElement {
+  const { type } = props
+
+  const swap = useBackgroundSelector((state) => {
+    return state.swap
+  })
+
+  const label = type === "sell" ? "You Pay" : "You Receive"
+  const amount = type === "sell" ? swap.sellAmount : swap.buyAmount
+  const symbol =
+    type === "sell" ? swap.sellToken?.symbol : swap.buyToken?.symbol
+  const logoUrl =
+    type === "sell"
+      ? swap.sellToken?.metadata?.logoURL
+      : swap.buyToken?.metadata?.logoURL
   return (
     <div className="card_wrap">
-      <div className="top_label">You pay</div>
-      <SharedAssetIcon />
-      <div className="amount">0.342</div>
-      <div className="asset_name">ETH</div>
+      <div className="top_label">{label}</div>
+      <SharedAssetIcon test="123" logoURL={logoUrl} symbol={symbol} />
+      <div className="amount">{amount}</div>
+      <div className="asset_name">{symbol}</div>
       <style jsx>
         {`
           .card_wrap {

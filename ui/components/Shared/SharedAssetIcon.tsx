@@ -4,6 +4,7 @@ interface Props {
   size: "small" | "medium" | "large"
   logoURL: string
   symbol: string
+  test?: string
 }
 
 export default function SharedAssetIcon(props: Props): ReactElement {
@@ -18,10 +19,17 @@ export default function SharedAssetIcon(props: Props): ReactElement {
   const hasValidImage =
     (logoURL && logoURL.includes("http")) || hasHardcodedIcon
 
+  if (props.test === "123") {
+    console.log({
+      hasValidImage,
+      logoURL,
+    })
+  }
+
   return (
     <div className={`token_icon_wrap ${size}`}>
       {hasValidImage ? (
-        <div className="token_icon" />
+        <div className="token_icon asdfasdf" />
       ) : (
         <div className={`token_icon_fallback ${size}`}>
           {symbol.slice(0)[0]}

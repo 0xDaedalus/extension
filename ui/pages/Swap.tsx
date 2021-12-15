@@ -6,6 +6,7 @@ import {
   setSwapTrade,
   setSwapAmount,
   fetchLimitTokens,
+  swapBuyAndSellSides,
 } from "@tallyho/tally-background/redux-slices/0x-swap"
 import { selectAccountAndTimestampedActivities } from "@tallyho/tally-background/redux-slices/selectors"
 import CorePage from "../components/Core/CorePage"
@@ -16,20 +17,26 @@ import SwapQoute from "../components/Swap/SwapQuote"
 import SharedActivityHeader from "../components/Shared/SharedActivityHeader"
 import SwapTransactionSettings from "../components/Swap/SwapTransactionSettings"
 import { useBackgroundDispatch, useBackgroundSelector } from "../hooks"
+import SwapLimitSettings from "../components/Swap/SwapLimitSettings"
 
 export default function Swap(): ReactElement {
   const dispatch = useBackgroundDispatch()
   const [openTokenMenu, setOpenTokenMenu] = useState(false)
-  const [activeActivity, setActiveActivity] = useState<"swap" | "limit">("swap")
+  const [activeActivity, setActiveActivity] = useState<"swap" | "limit">(
+    "limit"
+  )
 
   const swap = useBackgroundSelector((state) => {
-    console.log(state)
+    ;(window as any).state = state
     return state.swap
   })
 
   // Fetch tokens from the 0x API whenever the swap page is loaded
   useEffect(() => {
     dispatch(fetchTokens())
+  }, [dispatch])
+
+  useEffect(() => {
     dispatch(fetchLimitTokens())
   }, [dispatch])
 
@@ -61,8 +68,6 @@ export default function Swap(): ReactElement {
 
   const toAssetSelected = useCallback(
     (token) => {
-      logger.log("Asset selected!", token)
-
       dispatch(
         setSwapTrade({
           buyToken: token,
@@ -74,28 +79,37 @@ export default function Swap(): ReactElement {
   )
 
   const fromAmountChanged = useCallback(
-    (event) => {
-      const inputValue = event.target.value.replace(/[^0-9.]/g, "") // Allow numbers and decimals only
+    (type: "limit" | "swap") => (value: string) => {
+      const inputValue = value.replace(/[^0-9.]/g, "") // Allow numbers and decimals only
       const floatValue = parseFloat(inputValue)
 
-      if (
-        Number.isNaN(floatValue) ||
-        typeof swap.buyToken?.price === "undefined"
-      ) {
-        dispatch(
-          setSwapAmount({
-            sellAmount: inputValue,
-            buyAmount: "0",
-          })
-        )
+      if (type === "swap") {
+        if (
+          Number.isNaN(floatValue) ||
+          typeof swap.buyToken?.price === "undefined"
+        ) {
+          dispatch(
+            setSwapAmount({
+              sellAmount: inputValue,
+              buyAmount: "0",
+            })
+          )
+        } else {
+          dispatch(
+            setSwapAmount({
+              sellAmount: inputValue,
+              // TODO: Use a safe math library
+              buyAmount: (
+                floatValue / parseFloat(swap.buyToken.price)
+              ).toString(),
+            })
+          )
+        }
       } else {
+        // Limit Orders
         dispatch(
           setSwapAmount({
             sellAmount: inputValue,
-            // TODO: Use a safe math library
-            buyAmount: (
-              floatValue / parseFloat(swap.buyToken.price)
-            ).toString(),
           })
         )
       }
@@ -105,27 +119,36 @@ export default function Swap(): ReactElement {
   )
 
   const toAmountChanged = useCallback(
-    (event) => {
-      const inputValue = event.target.value.replace(/[^0-9.]/g, "") // Allow numbers and decimals only
+    (type: "swap" | "limit") => (value: string) => {
+      const inputValue = value.replace(/[^0-9.]/g, "") // Allow numbers and decimals only
       const floatValue = parseFloat(inputValue)
 
-      if (
-        Number.isNaN(floatValue) ||
-        typeof swap.buyToken?.price === "undefined"
-      ) {
-        dispatch(
-          setSwapAmount({
-            sellAmount: "0",
-            buyAmount: inputValue,
-          })
-        )
+      if (type === "swap") {
+        if (
+          Number.isNaN(floatValue) ||
+          typeof swap.buyToken?.price === "undefined"
+        ) {
+          dispatch(
+            setSwapAmount({
+              sellAmount: "0",
+              buyAmount: inputValue,
+            })
+          )
+        } else {
+          dispatch(
+            setSwapAmount({
+              // TODO: Use a safe math library
+              sellAmount: (
+                floatValue * parseFloat(swap.buyToken.price)
+              ).toString(),
+              buyAmount: inputValue,
+            })
+          )
+        }
       } else {
+        // Limit Orders
         dispatch(
           setSwapAmount({
-            // TODO: Use a safe math library
-            sellAmount: (
-              floatValue * parseFloat(swap.buyToken.price)
-            ).toString(),
             buyAmount: inputValue,
           })
         )
@@ -135,35 +158,46 @@ export default function Swap(): ReactElement {
     [dispatch, swap]
   )
 
+  const swapBuyAndSell = useCallback(() => {
+    dispatch(swapBuyAndSellSides())
+  }, [dispatch])
+
+  const displayLimitOrderSummary =
+    swap.buyToken && swap.sellAmount && swap.buyAmount
+
   return (
     <>
       <CorePage>
         <SharedSlideUpMenu
           isOpen={openTokenMenu}
           close={handleClick}
-          size="large"
+          size="medium"
         >
           <SwapQoute />
         </SharedSlideUpMenu>
         <div className="standard_width">
-          <span className="clickable" onClick={() => setActiveActivity("swap")}>
-            <SharedActivityHeader
-              inactive={activeActivity !== "swap"}
-              label="Swap Assets"
-              activity="swap"
-            />
-          </span>
-          <span className="activity_separator">|</span>
-          <span
-            className="clickable"
-            onClick={() => setActiveActivity("limit")}
+          <div
+            style={{
+              marginBottom: "-23px",
+              marginTop: "-20px",
+            }}
           >
-            <SharedActivityHeader
-              inactive={activeActivity !== "limit"}
-              label="Limit Order"
-              activity="limit"
-            />
-          </span>
+            <span>
+              <SharedActivityHeader
+                inactive={activeActivity !== "swap"}
+                label="Swap Assets"
+                activity="swap"
+              />
+            </span>
+            <span className="activity_separator">|</span>
+            <span onClick={() => setActiveActivity("limit")}>
+              <SharedActivityHeader
+                inactive={activeActivity !== "limit"}
+                label="Limit Order"
+                activity="limit"
+              />
+            </span>
+          </div>
           {activeActivity === "swap" && (
             <div className="form">
               <div className="form_input">
@@ -171,7 +205,7 @@ export default function Swap(): ReactElement {
                   assets={displayAssets}
                   defaultToken={swap.sellToken}
                   onAssetSelect={fromAssetSelected}
-                  onAmountChange={fromAmountChanged}
+                  onAmountChange={fromAmountChanged("swap")}
                   amount={swap.sellAmount}
                   label="Swap from:"
                 />
@@ -182,7 +216,7 @@ export default function Swap(): ReactElement {
                   assets={swap.tokens}
                   defaultToken={swap.buyToken}
                   onAssetSelect={toAssetSelected}
-                  onAmountChange={toAmountChanged}
+                  onAmountChange={toAmountChanged("swap")}
                   amount={swap.buyAmount}
                   label="Swap to:"
                 />
@@ -218,23 +252,52 @@ export default function Swap(): ReactElement {
                 <SharedAssetInput
                   assets={swap.limitTokens}
                   defaultToken={swap.sellToken}
+                  controlledToken={swap.sellToken}
                   onAssetSelect={fromAssetSelected}
-                  onAmountChange={fromAmountChanged}
+                  onAmountChange={fromAmountChanged("limit")}
                   amount={swap.sellAmount}
+                  footer={
+                    swap.sellToken ? `1 ${swap.sellToken?.symbol} = $XXXX` : ""
+                  }
                   label="You Pay:"
                 />
               </div>
-              <div className="icon_change" />
+              <div
+                className="icon_change"
+                style={{
+                  cursor: "pointer",
+                }}
+                onClick={() => swapBuyAndSell()}
+              />
               <div className="form_input">
                 <SharedAssetInput
                   assets={swap.limitTokens}
                   defaultToken={swap.buyToken}
+                  controlledToken={swap.buyToken}
                   onAssetSelect={toAssetSelected}
-                  onAmountChange={toAmountChanged}
+                  onAmountChange={toAmountChanged("limit")}
+                  footer={
+                    swap.buyToken ? `1 ${swap.buyToken?.symbol} = $XXXX` : ""
+                  }
                   amount={swap.buyAmount}
                   label="You Receive:"
                 />
               </div>
+              {swap.buyToken && swap.sellToken ? (
+                <div className="form_input">
+                  <SharedAssetInput
+                    assets={swap.limitTokens}
+                    defaultToken={swap.buyToken}
+                    amount={String(+swap.buyAmount / +swap.sellAmount)}
+                    label={`${swap.buyToken?.symbol} Price:`}
+                    controlledToken={swap.buyToken}
+                    isTokenOptionsLocked={true}
+                    footer={`Per ${swap.sellToken?.symbol}`}
+                  />
+                </div>
+              ) : (
+                <></>
+              )}
               <div className="form_input limit_order_price_input">
                 {/* <SharedLimitOrderPrice
                   onAssetSelect={fromAssetSelected}
@@ -242,27 +305,22 @@ export default function Swap(): ReactElement {
                 /> */}
               </div>
               <div className="settings_wrap">
-                <SwapTransactionSettings />
+                {displayLimitOrderSummary && (
+                  <SwapLimitSettings
+                    toAsset={swap.sellToken}
+                    fromAsset={swap.buyToken}
+                  />
+                )}
               </div>
               <div className="footer standard_width_padded">
-                {swap.sellToken && swap.buyToken ? (
-                  <SharedButton
-                    type="primary"
-                    size="large"
-                    isDisabled
-                    onClick={handleClick}
-                  >
-                    Review order
-                  </SharedButton>
-                ) : (
-                  <SharedButton
-                    type="primary"
-                    size="large"
-                    onClick={handleClick}
-                  >
-                    Review order
-                  </SharedButton>
-                )}
+                <SharedButton
+                  type="primary"
+                  size="large"
+                  isDisabled={!swap.sellToken || !swap.buyToken}
+                  onClick={handleClick}
+                >
+                  Review order
+                </SharedButton>
               </div>
             </div>
           )}
@@ -324,9 +382,6 @@ export default function Swap(): ReactElement {
           }
           .settings_wrap {
             margin-top: 16px;
-          }
-          .clickable {
-            cursor: pointer;
           }
           .activity_separator {
             font-size: 30px;
