@@ -1,4 +1,4 @@
-import React, { ReactElement, useCallback, useState } from "react"
+import React, { ReactElement, useCallback, useEffect, useState } from "react"
 import { Asset } from "@tallyho/tally-background/assets"
 import classNames from "classnames"
 import SharedButton from "./SharedButton"
@@ -9,12 +9,13 @@ import SharedAssetIcon from "./SharedAssetIcon"
 interface SelectTokenMenuContentProps {
   assets: Asset[]
   setSelectedTokenAndClose: (token: Asset) => void
+  filterAssets?: (value: string) => void
 }
 
 function SelectTokenMenuContent(
   props: SelectTokenMenuContentProps
 ): ReactElement {
-  const { setSelectedTokenAndClose, assets } = props
+  const { setSelectedTokenAndClose, assets, filterAssets } = props
 
   return (
     <>
@@ -24,7 +25,12 @@ function SelectTokenMenuContent(
           <input
             type="text"
             className="search_input"
-            placeholder="Search by name or address"
+            placeholder="Search by name"
+            onChange={(e) => {
+              if (filterAssets) {
+                filterAssets(e.target.value)
+              }
+            }}
           />
           <span className="icon_search" />
         </div>
@@ -134,7 +140,9 @@ interface SharedAssetInputProps {
   assets: Asset[]
   label: string
   defaultToken: Asset
+  controlledToken?: Asset
   amount: string
+  footer?: string
   maxBalance: number
   isTokenOptionsLocked: boolean
   disableDropdown: boolean
@@ -158,10 +166,22 @@ export default function SharedAssetInput(
     onAssetSelect,
     onAmountChange,
     onSendToAddressChange,
+    controlledToken,
   } = props
 
   const [openAssetMenu, setOpenAssetMenu] = useState(false)
   const [selectedToken, setSelectedToken] = useState(defaultToken)
+  const [filteredAssets, setFilteredAssets] = useState(assets)
+
+  React.useEffect(() => {
+    setFilteredAssets(assets)
+  }, [assets])
+
+  useEffect(() => {
+    if (controlledToken) {
+      setSelectedToken(controlledToken)
+    }
+  }, [controlledToken])
 
   const toggleIsTokenMenuOpen = useCallback(() => {
     if (!isTokenOptionsLocked) {
@@ -195,11 +215,20 @@ export default function SharedAssetInput(
           setOpenAssetMenu(false)
         }}
       >
-        {assets && (
+        {assets ? (
           <SelectTokenMenuContent
-            assets={assets}
+            assets={filteredAssets}
+            filterAssets={(value) => {
+              setFilteredAssets(
+                assets.filter((asset) =>
+                  asset.symbol.toUpperCase().includes(value.toUpperCase())
+                )
+              )
+            }}
             setSelectedTokenAndClose={setSelectedTokenAndClose}
           />
+        ) : (
+          <></>
         )}
       </SharedSlideUpMenu>
       <div className="asset_input standard_width">
@@ -247,12 +276,16 @@ export default function SharedAssetInput(
             />
           </>
         )}
-        <div className="error_message">{getErrorMessage(amount)}</div>
+        {/* Disable Errors For Now */}
+        {/* <div className={getErrorMessage(amount) ? "error_message" : "footer"}>
+          {getErrorMessage(amount) || props.footer}
+        </div> */}
+        <div className={"footer"}>{props.footer}</div>
       </div>
       <style jsx>
         {`
           .asset_input {
-            height: 72px;
+            height: 62px;
             border-radius: 4px;
             background-color: var(--green-95);
             display: flex;
@@ -327,6 +360,20 @@ export default function SharedAssetInput(
           .disable_click {
             pointer-events: none;
           }
+          .footer {
+            color: var(--green-40);
+            position: fixed;
+            font-weight: 500;
+            font-size: 14px;
+            line-height: 20px;
+            transform: translateY(-3px);
+            align-self: flex-end;
+            text-align: end;
+            width: 150px;
+            background-color: var(--green-95);
+            margin-left: 172px;
+            z-index: 1;
+          }
         `}
       </style>
     </label>
@@ -341,6 +388,7 @@ SharedAssetInput.defaultProps = {
   defaultToken: { symbol: "", name: "" },
   label: "",
   amount: "0.0",
+  footer: "",
   maxBalance: 0,
   onAssetSelect: () => {
     // do nothing by default

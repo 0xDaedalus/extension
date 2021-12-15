@@ -6,19 +6,20 @@ interface Props {
   close: () => void
   children: React.ReactNode
   customSize?: string
+  title?: string
   size: "small" | "medium" | "large" | "custom"
 }
 
 export default function SharedSlideUpMenu(props: Props): ReactElement {
-  const { isOpen, close, size, children, customSize } = props
+  const { isOpen, close, size, children, customSize, title } = props
 
   let menuHeight = "536px"
   if (size === "large") {
-    menuHeight = "600px"
+    menuHeight = "800px"
   } else if (size === "small") {
     menuHeight = "268px"
   } else if (size === "custom") {
-    menuHeight = customSize || "600px"
+    menuHeight = customSize || "800px"
   }
 
   return (
@@ -28,12 +29,20 @@ export default function SharedSlideUpMenu(props: Props): ReactElement {
         closed: !isOpen,
       })}
     >
-      <button
-        type="button"
-        className="icon_close"
-        onClick={close}
-        aria-label="Close menu"
-      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+        }}
+      >
+        <div className="slide_up_menu_title">{title || ""}</div>
+        <button
+          type="button"
+          className="icon_close"
+          onClick={close}
+          aria-label="Close menu"
+        />
+      </div>
       {children}
       <style jsx>
         {`
@@ -51,6 +60,14 @@ export default function SharedSlideUpMenu(props: Props): ReactElement {
             transition: transform cubic-bezier(0.19, 1, 0.22, 1) 0.445s;
             padding-top: 24px;
             box-sizing: border-box;
+          }
+          .slide_up_menu_title {
+            height: 20px;
+            color: var(--green-40);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
           .icon_close {
             mask-image: url("./images/close.svg");

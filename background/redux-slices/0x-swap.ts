@@ -16,6 +16,7 @@ export interface SwapState {
   sellAmount: string
   buyAmount: string
   tokens: Asset[]
+  expiration: '1h' | '2h' | '1d' | '1w'
   limitTokens: Asset[]
 }
 
@@ -50,8 +51,8 @@ interface SwapToken {
 }
 
 interface SwapAmount {
-  sellAmount: string
-  buyAmount: string
+  sellAmount?: string
+  buyAmount?: string
 }
 
 interface ZrxToken {
@@ -136,7 +137,7 @@ export const fetchLimitTokens = createBackgroundAsyncThunk(
     const validAssets = await getValidAssets(getState)
     const rookTokens = await fetchJson(`https://hidingbook.keeperdao.com/api/v1/tokenList`) as RookTokenListResponse
     return validAssets.filter(asset => {
-      return rookTokens.result.tokens.find(rookToken => rookToken.address === asset.contractAddress && String(rookToken.chainId) === asset.homeNetwork.chainID)
+      return rookTokens.result.tokens.find(rookToken => rookToken.address === asset.contractAddress)
     })
   }
 )
@@ -158,6 +159,7 @@ export const initialState: SwapState = {
   sellAmount: "",
   buyAmount: "",
   tokens: [],
+  expiration: '1h',
   limitTokens: []
 }
 
@@ -174,6 +176,18 @@ const swapSlice = createSlice({
 
     setSwapTrade: (immerState, { payload: token }: { payload: SwapToken }) => {
       return { ...immerState, ...token }
+    },
+    setExpiration: (immerState, { payload: expiration }: { payload: '1h' | '2h' | '1d' | '1w' }) => {
+      return { ...immerState, expiration }
+    },
+    swapBuyAndSellSides: (immerState) => {
+      return { 
+        ...immerState,
+        buyAmount: immerState.sellAmount,
+        buyToken: immerState.sellToken,
+        sellAmount: immerState.buyAmount,
+        sellToken: immerState.buyToken
+       }
     },
   },
 
@@ -216,5 +230,5 @@ const swapSlice = createSlice({
   },
 })
 
-export const { setSwapAmount, setSwapTrade } = swapSlice.actions
+export const { setSwapAmount, setSwapTrade, setExpiration, swapBuyAndSellSides } = swapSlice.actions
 export default swapSlice.reducer

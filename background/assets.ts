@@ -44,6 +44,7 @@ export type Asset = {
   symbol: string
   name: string
   metadata?: AssetMetadata
+  price?: any
 }
 
 /**

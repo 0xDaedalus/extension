@@ -4,9 +4,15 @@ import SharedActivityHeader from "../Shared/SharedActivityHeader"
 import SwapQuoteAssetCard from "./SwapQuoteAssetCard"
 import SwapTransactionSettings from "./SwapTransactionSettings"
 import SwapApprovalStep from "./SwapApprovalStep"
+import { useBackgroundSelector } from "../../hooks"
+import SwapLimitSettings from "./SwapLimitSettings"
 
 export default function SwapQoute(): ReactElement {
   const [stepComplete, setStepComplete] = useState(-1)
+
+  const swap = useBackgroundSelector((state) => {
+    return state.swap
+  })
 
   const handleApproveClick = useCallback(() => {
     setStepComplete(0)
@@ -21,17 +27,23 @@ export default function SwapQoute(): ReactElement {
     }, 4500)
   }, [])
 
+  const exchangeRateLabel = `1 ${
+    swap.sellToken?.symbol
+  } = ${new Intl.NumberFormat("en-US").format(
+    +swap.buyAmount / +swap.sellAmount
+  )} ${swap.buyToken?.symbol}`
+
   return (
     <section className="center_horizontal standard_width">
-      <SharedActivityHeader label="Swap Assets" activity="swap" />
+      <SharedActivityHeader label="Limit Order" activity="swap" />
       <div className="qoute_cards">
-        <SwapQuoteAssetCard />
+        <SwapQuoteAssetCard type="sell" test="enabled" />
         <span className="icon_switch" />
-        <SwapQuoteAssetCard />
+        <SwapQuoteAssetCard type="buy" />
       </div>
-      <span className="label label_right">1 ETH = 9,843 KEEP</span>
+      <span className="label label_right">{exchangeRateLabel}</span>
       <div className="settings_wrap">
-        <SwapTransactionSettings />
+        <SwapLimitSettings />
       </div>
       {stepComplete > -1 ? (
         <>
@@ -53,13 +65,17 @@ export default function SwapQoute(): ReactElement {
       ) : (
         <>
           <div className="exchange_section_wrap">
-            <span className="label">Exchange route</span>
             <div className="exchange_content standard_width">
               <div className="left">
-                <span className="icon_uniswap" />
-                Uniswap v3
+                <div className="icon_rook" />
+                <a
+                  className="keeper-link"
+                  href="https://www.keeperdao.com/"
+                  target="_blank"
+                >
+                  Powered By KeeperDAO
+                </a>
               </div>
-              <div>100%</div>
             </div>
           </div>
           <div className="approve_button center_horizontal">
@@ -78,12 +94,18 @@ export default function SwapQoute(): ReactElement {
           section {
             margin-top: -24px;
           }
-          .icon_uniswap {
-            background: url("./images/uniswap@2x.png");
+          .icon_rook {
+            background: url("./images/rook@2x.png");
             background-size: 24px 24px;
             width: 24px;
             height: 24px;
             margin-right: 8px;
+          }
+          .keeper-link,
+          .keeper-link:visited,
+          .keeper-link:hover,
+          .keeper-link:active {
+            color: var(--gold-80);
           }
           .approval_steps {
             height: 96px;
@@ -128,7 +150,7 @@ export default function SwapQoute(): ReactElement {
             letter-spacing: 0.42px;
             line-height: 16px;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             padding: 0px 16px;
             box-sizing: border-box;
