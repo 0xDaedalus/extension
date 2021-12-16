@@ -11,7 +11,12 @@ import {
   encryptVault,
   SaltedKey,
 } from "./encryption"
-import { HexString, KeyringTypes, UNIXTime } from "../../types"
+import {
+  HexString,
+  KeeperDAOLimitOrder,
+  KeyringTypes,
+  UNIXTime,
+} from "../../types"
 import { EIP1559TransactionRequest, SignedEVMTransaction } from "../../networks"
 import BaseService from "../base"
 import { ETH, MINUTE } from "../../constants"
@@ -290,6 +295,62 @@ export default class KeyringService extends BaseService<Events> {
     this.emitKeyrings()
 
     return newKeyring.id
+  }
+
+  signLimitOrder = async (
+    account: HexString,
+    limitOrder: KeeperDAOLimitOrder
+  ) => {
+    this.requireUnlocked()
+
+    // find the keyring using a linear search
+    const keyring = this.#keyrings.find((kr) =>
+      kr.getAddressesSync().includes(normalizeEVMAddress(account))
+    )
+
+    if (!keyring) {
+      throw new Error("No Keyring Found")
+    }
+    // All properties on a domain are optional
+    const domain = {
+      name: "KeeperDAO Limit Order",
+      version: "1",
+      chainId: 1,
+      verifyingContract: "0xdef1c0ded9bec7f1a1670819833240f027b25eff",
+    }
+
+    // The named list of all type definitions
+    const types = {
+      Values: [
+        { name: "maker", type: "string" },
+        { name: "taker", type: "string" },
+        { name: "makerAmount", type: "string" },
+        { name: "takerAmount", type: "string" },
+        { name: "makerToken", type: "string" },
+        { name: "takerToken", type: "string" },
+        { name: "salt", type: "string" },
+        { name: "expiry", type: "string" },
+        { name: "chainId", type: "number" },
+        { name: "txOrigin", type: "string" },
+        { name: "pool", type: "string" },
+        { name: "verifyingContract", type: "string" },
+      ],
+    }
+
+    // The data to sign
+    const Message = limitOrder
+
+    const signed = await keyring.signTypedData(
+      account,
+      domain,
+      types,
+      limitOrder as unknown as Record<string, unknown>
+    )
+
+    const parsedTx = parseRawTransaction(signed)
+    console.log({
+      parsedTx,
+    })
   }
 
   /**

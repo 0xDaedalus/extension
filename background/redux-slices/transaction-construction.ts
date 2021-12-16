@@ -1,11 +1,14 @@
 import { createSlice, createSelector } from "@reduxjs/toolkit"
 import Emittery from "emittery"
+import logger from "../lib/logger"
 
 import {
   BlockEstimate,
   BlockPrices,
   EIP1559TransactionRequest,
 } from "../networks"
+import { KeeperDAOLimitOrder } from "../types"
+import { SwapState } from "./0x-swap"
 import { createBackgroundAsyncThunk } from "./utils"
 
 const enum TransactionConstructionStatus {
@@ -40,6 +43,7 @@ export type Events = {
     from: string
   }
   requestSignature: EIP1559TransactionRequest
+  requestLimitOrder: KeeperDAOLimitOrder
 }
 
 export const emitter = new Emittery<Events>()
@@ -56,6 +60,15 @@ export const signTransaction = createBackgroundAsyncThunk(
   "transaction-construction/sign",
   async (transaction: EIP1559TransactionRequest) => {
     await emitter.emit("requestSignature", transaction)
+  }
+)
+
+export const signLimitOrder = createBackgroundAsyncThunk(
+  "transaction-construction/signLimitOrder",
+  async (transaction: KeeperDAOLimitOrder) => {
+    console.log("requesting limit order")
+    logger.log("Requesting Limit Order")
+    await emitter.emit("requestLimitOrder", transaction)
   }
 )
 

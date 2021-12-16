@@ -4,7 +4,6 @@ interface Props {
   size: "small" | "medium" | "large"
   logoURL: string
   symbol: string
-  test?: string
 }
 
 export default function SharedAssetIcon(props: Props): ReactElement {
@@ -18,13 +17,6 @@ export default function SharedAssetIcon(props: Props): ReactElement {
   // which won't load. Of if we have a hardcoded backup image
   const hasValidImage =
     (logoURL && logoURL.includes("http")) || hasHardcodedIcon
-
-  if (props.test === "123") {
-    console.log({
-      hasValidImage,
-      logoURL,
-    })
-  }
 
   return (
     <div className={`token_icon_wrap ${size}`}>

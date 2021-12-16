@@ -50,3 +50,18 @@ export enum KeyringTypes {
   metamaskMnemonic = "mnemonic#metamask",
   singleSECP = "single#secp256k1",
 }
+
+export interface KeeperDAOLimitOrder {
+  maker: HexString
+  taker: HexString
+  makerAmount: string
+  takerAmount: string
+  makerToken: HexString
+  takerToken: HexString
+  salt: string
+  expiry: string
+  chainId: number
+  txOrigin: HexString
+  pool: string
+  verifyingContract: HexString
+}

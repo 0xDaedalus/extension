@@ -27,7 +27,7 @@ export default function SwapQuoteAssetCard(
   return (
     <div className="card_wrap">
       <div className="top_label">{label}</div>
-      <SharedAssetIcon test="123" logoURL={logoUrl} symbol={symbol} />
+      <SharedAssetIcon logoURL={logoUrl} symbol={symbol} />
       <div className="amount">{amount}</div>
       <div className="asset_name">{symbol}</div>
       <style jsx>

@@ -19,7 +19,7 @@ import {
   ServiceCreatorFunction,
 } from "./services"
 
-import { KeyringTypes } from "./types"
+import { KeeperDAOLimitOrder, KeyringTypes } from "./types"
 import { EIP1559TransactionRequest } from "./networks"
 
 import rootReducer from "./redux-slices"
@@ -377,6 +377,19 @@ export default class Main extends BaseService<never> {
         )
         this.store.dispatch(signed())
         await this.chainService.broadcastSignedTransaction(signedTx)
+      }
+    )
+
+    transactionConstructionSliceEmitter.on(
+      "requestLimitOrder",
+      async (transaction: KeeperDAOLimitOrder) => {
+        logger.log("Got Limit Order Request!")
+        const signedTx = await this.keyringService.signLimitOrder(
+          transaction.txOrigin,
+          transaction
+        )
+
+        console.log("SIGNED!: ", signedTx)
       }
     )
 

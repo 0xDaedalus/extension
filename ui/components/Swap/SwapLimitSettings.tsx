@@ -23,7 +23,6 @@ export default function SwapLimitSettings(
   const [isSlideUpMenuOpen, setIsSlideUpMenuOpen] = useState(false)
 
   const swap = useBackgroundSelector((state) => {
-    console.log("limitTokens", state.swap.limitTokens)
     ;(window as any).state = state
     return state.swap
   })

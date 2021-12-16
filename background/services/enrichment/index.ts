@@ -113,9 +113,28 @@ export default class EnrichmentService extends BaseService<Events> {
     return new this(await chainService, await indexingService)
   }
 
+<<<<<<< HEAD
   private constructor(
     private chainService: ChainService,
     private indexingService: IndexingService
+=======
+  // See if the address matches a fungible asset.
+  const matchingFungibleAsset = assets.find(
+    (asset): asset is SmartContractFungibleAsset =>
+      isSmartContractFungibleAsset(asset) &&
+      asset.contractAddress.toLowerCase() === contractAddress.toLowerCase()
+  )
+
+  const contractLogoURL = matchingFungibleAsset?.metadata?.logoURL
+
+  // Derive value from transaction transfer if not sending ETH
+  // FIXME Move to ERC20 parsing using ethers.
+  if (
+    typeof matchingFungibleAsset !== "undefined" &&
+    contractInput.length === 138 &&
+    true
+    // contractInput.startsWith("0xa9059cbb") // transfer selector
+>>>>>>> bf15314 (prog)
   ) {
     super({})
   }
