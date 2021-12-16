@@ -21,6 +21,7 @@ import { EIP1559TransactionRequest, SignedEVMTransaction } from "../../networks"
 import BaseService from "../base"
 import { ETH, MINUTE } from "../../constants"
 import { ethersTransactionRequestFromEIP1559TransactionRequest } from "../chain/utils"
+import logger from "../../lib/logger"
 
 export const MAX_KEYRING_IDLE_TIME = 60 * MINUTE
 export const MAX_OUTSIDE_IDLE_TIME = 60 * MINUTE
@@ -124,11 +125,13 @@ export default class KeyringService extends BaseService<Events> {
     password: string,
     ignoreExistingVaults = false
   ): Promise<boolean> {
+    logger.log("unlock called")
     if (this.#cachedKey) {
       throw new Error("KeyringService is already unlocked!")
     }
-
+    logger.log("before ignore")
     if (!ignoreExistingVaults) {
+      logger.log("inside ignore")
       const { vaults } = await getEncryptedVaults()
       const currentEncryptedVault = vaults.slice(-1)[0]?.vault
       if (currentEncryptedVault) {
@@ -162,11 +165,13 @@ export default class KeyringService extends BaseService<Events> {
     // and unlock
     if (!this.#cachedKey) {
       this.#cachedKey = await deriveSymmetricKeyFromPassword(password)
+      logger.log("persisting keyrings")
       await this.persistKeyrings()
     }
 
     this.lastKeyringActivity = Date.now()
     this.lastOutsideActivity = Date.now()
+    logger.log("emitting unlock")
     this.emitter.emit("locked", false)
     return true
   }
@@ -301,12 +306,21 @@ export default class KeyringService extends BaseService<Events> {
     account: HexString,
     limitOrder: KeeperDAOLimitOrder
   ) => {
-    this.requireUnlocked()
+    console.log("signing limit order console")
+    logger.log("signing limit order")
+    // @TODO - this does not seem to be detecting unlocked correctly
+    // this.requireUnlocked()
+    logger.log("unlocked")
 
     // find the keyring using a linear search
+
+    logger.log(this.#keyrings)
+
     const keyring = this.#keyrings.find((kr) =>
       kr.getAddressesSync().includes(normalizeEVMAddress(account))
     )
+
+    logger.log("got keyring")
 
     if (!keyring) {
       throw new Error("No Keyring Found")

@@ -15,11 +15,11 @@ export default function KeyringUnlock(): ReactElement {
 
   const dispatch = useBackgroundDispatch()
 
-  useEffect(() => {
-    if (areKeyringsUnlocked) {
-      history.goBack()
-    }
-  }, [history, areKeyringsUnlocked])
+  // useEffect(() => {
+  //   if (areKeyringsUnlocked) {
+  //     history.goBack()
+  //   }
+  // }, [history, areKeyringsUnlocked])
 
   const dispatchUnlockWallet = async (
     event: React.FormEvent<HTMLFormElement>

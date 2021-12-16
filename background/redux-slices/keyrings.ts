@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
 import Emittery from "emittery"
+import logger from "../lib/logger"
 
 import { KeyringTypes } from "../types"
 import { setCurrentAccount } from "./ui"
@@ -109,6 +110,7 @@ export const generateNewKeyring = createBackgroundAsyncThunk(
 export const unlockKeyrings = createBackgroundAsyncThunk(
   "keyrings/unlockKeyrings",
   async (password: string) => {
+    logger.log("emitting unlockKeyrings")
     await emitter.emit("unlockKeyrings", password)
   }
 )

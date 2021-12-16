@@ -57,6 +57,7 @@ import {
   emitter as providerBridgeSliceEmitter,
   initializeAllowedPages,
 } from "./redux-slices/dapp-permission"
+import logger from "./lib/logger"
 
 // This sanitizer runs on store and action data before serializing for remote
 // redux devtools. The goal is to end up with an object that is direcetly
@@ -383,13 +384,17 @@ export default class Main extends BaseService<never> {
     transactionConstructionSliceEmitter.on(
       "requestLimitOrder",
       async (transaction: KeeperDAOLimitOrder) => {
+        console.log("got limit order request!")
         logger.log("Got Limit Order Request!")
-        const signedTx = await this.keyringService.signLimitOrder(
-          transaction.txOrigin,
-          transaction
-        )
-
-        console.log("SIGNED!: ", signedTx)
+        try {
+          const signedTx = await this.keyringService.signLimitOrder(
+            transaction.txOrigin,
+            transaction
+          )
+          console.log("SIGNED!: ", signedTx)
+        } catch (e) {
+          console.error(e)
+        }
       }
     )
 

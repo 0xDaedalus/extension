@@ -25,6 +25,10 @@ export const useAreKeyringsUnlocked = (redirectIfNot: boolean): boolean => {
   const keyringStatus = useBackgroundSelector(selectKeyringStatus)
   const history = useHistory()
 
+  console.log({
+    keyringStatus,
+  })
+
   let redirectTarget: string | undefined
   if (keyringStatus === "uninitialized") {
     redirectTarget = "/keyring/set-password"

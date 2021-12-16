@@ -2,7 +2,11 @@ import React, { ReactElement } from "react"
 import SharedButton from "../Shared/SharedButton"
 import SharedActivityHeader from "../Shared/SharedActivityHeader"
 import SwapQuoteAssetCard from "./SwapQuoteAssetCard"
-import { useBackgroundDispatch, useBackgroundSelector } from "../../hooks"
+import {
+  useAreKeyringsUnlocked,
+  useBackgroundDispatch,
+  useBackgroundSelector,
+} from "../../hooks"
 import SwapLimitSettings from "./SwapLimitSettings"
 import { DAY, HOUR } from "@tallyho/tally-background/constants"
 import { KeeperDAOLimitOrder } from "@tallyho/tally-background/types"
@@ -73,6 +77,7 @@ const verifyLimitOrder = (
 }
 
 export default function SwapQoute(): ReactElement {
+  const areKeyringsUnlocked = useAreKeyringsUnlocked(true)
   const history = useHistory()
   const dispatch = useBackgroundDispatch()
 
@@ -81,6 +86,14 @@ export default function SwapQoute(): ReactElement {
   })
 
   const limitOrderState = useBackgroundSelector(selectCurrentLimitOrder)
+
+  console.log({
+    areKeyringsUnlocked,
+  })
+
+  if (!areKeyringsUnlocked) {
+    return <></>
+  }
 
   const handleConfirm = async () => {
     if (limitOrderState) {
@@ -134,6 +147,15 @@ export default function SwapQoute(): ReactElement {
           </div>
         </div>
         <div className="approve_button center_horizontal">
+          <SharedButton
+            type="primary"
+            size="small"
+            onClick={() => {
+              history.push("/keyring/unlock")
+            }}
+          >
+            Unlock Keyring
+          </SharedButton>
           <SharedButton type="primary" size="large" onClick={handleConfirm}>
             Sign Limit Order
           </SharedButton>
